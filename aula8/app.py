@@ -25,5 +25,15 @@ app = Flask(__name__)
 def obter_postagens():
     return jsonify(postagens)
 
+# Criar uma nova postagem - POST - GET http://localhost:5000/postagem
+
+
+@app.route('/postagem', methods=['POST'])
+def nova_postagem():
+    postagem = request.get_json()
+    postagem.append(postagem)
+
+    return jsonify(postagem, 200)
+
 
 app.run(port=5000, host='localhost', debug=True)
