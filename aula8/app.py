@@ -35,5 +35,14 @@ def nova_postagem():
 
     return jsonify(postagem, 200)
 
+# Alterar postage, existente - PUT
+
+
+@app.route('/postagem/<int:indice>', methods=['PUT'])
+def alterar_postagem(indice):
+    postagem_alterada = request.get_json()
+    postagens[indice].update(postagem_alterada)
+    return jsonify(postagens[indice], 200)
+
 
 app.run(port=5000, host='localhost', debug=True)
