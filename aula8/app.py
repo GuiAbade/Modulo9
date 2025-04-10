@@ -25,7 +25,7 @@ app = Flask(__name__)
 def obter_postagens():
     return jsonify(postagens)
 
-# Criar uma nova postagem - POST - GET http://localhost:5000/postagem
+# Criar uma nova postagem - POST -  http://localhost:5000/postagem
 
 
 @app.route('/postagem', methods=['POST'])
