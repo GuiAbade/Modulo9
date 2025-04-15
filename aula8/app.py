@@ -1,85 +1,158 @@
-# NOSSO 1° API - FLASK e DJANGO
-# FLASK e FLASK RESTFUL
-
 from flask import Flask, jsonify, request
-postagens = [
-    {
-        'titulo': 'Minha Historia',
-        'autor': 'Amanda Dias'
-    },
-    {
-        'titulo': 'Novo Dispositivo Sony',
-        'autor': 'Howard Stringer'
-    },
-    {
-        'titulo': 'Lançamento do Ano',
-        'autor': 'Jeff Bezos'
-    }
-]
-app = Flask(__name__)
-
-# Rota padrão - GET http://localhost:5000/
+from estrutura_banco_de_dados import Autor, Postagem, app, db
+import json
+# Rota padrão - GET https://localhost:5000
 
 
 @app.route('/')
 def obter_postagens():
-    return jsonify(postagens)
+    postagens = Postagem.query.all()
 
-# Criar uma nova postagem - POST -  http://localhost:5000/postagem
+    list_postagens = []
+    for postagem in postagens:
+        postagem_atual = {}
+        postagem_atual['titulo'] = postagem.titulo
+        postagem_atual['id_autor'] = postagem.id_autor
+        list_postagens.append(postagem_atual)
+    return jsonify({'postagens': list_postagens})
+
+# Obter postagem por id - GET https://localhost:5000/postagem/1
+
+
+@app.route('/postagem/<int:id_postagem>', methods=['GET'])
+def obter_postagem_por_indice(id_postagem):
+    postagem = Postagem.query.filter_by(id_postagem=id_postagem).first()
+    postagem_atual = {}
+    try:
+        postagem_atual['titulo'] = postagem.titulo
+    except:
+        pass
+    postagem_atual['id_autor'] = postagem.id_autor
+
+    return jsonify({'postagens': postagem_atual})
+
+# Criar uma nova postagem - POST https://localhost:5000/postagem
 
 
 @app.route('/postagem', methods=['POST'])
 def nova_postagem():
-    postagem = request.get_json()
-    postagem.append(postagem)
+    nova_postagem = request.get_json()
+    postagem = Postagem(
+        titulo=nova_postagem['titulo'], id_autor=nova_postagem['id_autor'])
 
-    return jsonify(postagem, 200)
+    db.session.add(postagem)
+    db.session.commit()
 
-# Alterar postage, existente - PUT - http://localhost:5000/postagem/1
+    return jsonify({'mensagem': 'Postagem criada com sucesso'})
+
+# Alterar uma postagem existente - PUT https://localhost:5000/postagem/1
 
 
-@app.route('/postagem/<int:indice>', methods=['PUT'])
-def alterar_postagem(indice):
+@app.route('/postagem/<int:id_postagem>', methods=['PUT'])
+def alterar_postagem(id_postagem):
     postagem_alterada = request.get_json()
-    postagens[indice].update(postagem_alterada)
-    return jsonify(postagens[indice], 200)
-
-# Excluir uma postagem DELETE - http://localhost:5000/postagem/1
-
-
-@app.route('/postagem/<int:indice>', methods=['DELETE'])
-def excluir_postagem(indice):
+    postagem = Postagem.query.filter_by(id_postagem=id_postagem).first()
     try:
-        if postagens[indice] is not None:
-            del postagens[indice]
-            return jsonify(f'Foi excluida a postagem {postagens[indice]}', 200)
+        postagem.titulo = postagem_alterada['titulo']
     except:
-        return jsonify('Não foi possivel encontrar postagem para exclusão', 404)
+        pass
+    try:
+        postagem.id_autor = postagem_alterada['id_autor']
+    except:
+        pass
+
+    db.session.commit()
+    return jsonify({'mensagem': 'Postagem alterada com sucessso'})
+
+# Excluir uma postagem - DELETE - https://localhost:5000/postagem/1
+
+
+@app.route('/postagem/<int:id_postagem>', methods=['DELETE'])
+def excluir_postagem(id_postagem):
+    postagem_a_ser_excluida = Postagem.query.filter_by(
+        id_postagem=id_postagem).first()
+    if not postagem_a_ser_excluida:
+        return jsonify({'mensagem': 'Não foi encontrado uma postagem com este id'})
+    db.session.delete(postagem_a_ser_excluida)
+    db.session.commit()
+
+    return jsonify({'mensagem': 'Postagem excluída com sucesso!'})
 
 
 @app.route('/autores')
 def obter_autores():
-    pass
+    autores = Autor.query.all()
+    lista_de_autores = []
+    for autor in autores:
+        autor_atual = {}
+        autor_atual['id_autor'] = autor.id_autor
+        autor_atual['nome'] = autor.nome
+        autor_atual['email'] = autor.email
+        lista_de_autores.append(autor_atual)
+
+    return jsonify({'autores': lista_de_autores})
 
 
 @app.route('/autores/<int:id_autor>', methods=['GET'])
 def obter_autor_por_id(id_autor):
-    pass
+    autor = Autor.query.filter_by(id_autor=id_autor).first()
+    if not autor:
+        return jsonify(f'Autor não encontrado!')
+    autor_atual = {}
+    autor_atual['id_autor'] = autor.id_autor
+    autor_atual['nome'] = autor.nome
+    autor_atual['email'] = autor.email
+
+    return jsonify({'autor': autor_atual})
+
+# Criar novo autor
 
 
 @app.route('/autores', methods=['POST'])
 def novo_autor():
-    pass
+    print('deu merda')
+    novo_autor = request.get_json()
+    autor = Autor(
+        nome=novo_autor['nome'], senha=novo_autor['senha'], email=novo_autor['email'])
+
+    db.session.add(autor)
+    db.session.commit()
+
+    return jsonify({'mensagem': 'Usuário criado com sucesso'}, 200)
 
 
 @app.route('/autores/<int:id_autor>', methods=['PUT'])
 def alterar_autor(id_autor):
-    pass
+    usuario_a_alterar = request.get_json()
+    autor = Autor.query.filter_by(id_autor=id_autor).first()
+    if not autor:
+        return jsonify({'Mensagem': 'Este usuário não foi encontrado'})
+    try:
+        autor.nome = usuario_a_alterar['nome']
+    except:
+        pass
+    try:
+        autor.email = usuario_a_alterar['email']
+    except:
+        pass
+    try:
+        autor.senha = usuario_a_alterar['senha']
+    except:
+        pass
+
+    db.session.commit()
+    return jsonify({'mensagem': 'Usuário alterado com sucesso!'})
 
 
 @app.route('/autores/<int:id_autor>', methods=['DELETE'])
 def excluir_autor(id_autor):
-    pass
+    autor_existente = Autor.query.filter_by(id_autor=id_autor).first()
+    if not autor_existente:
+        return jsonify({'mensagem': 'Este autor não foi encontrado'})
+    db.session.delete(autor_existente)
+    db.session.commit()
+
+    return jsonify({'mensagem': 'Autor excluído com sucesso!'})
 
 
 app.run(port=5000, host='localhost', debug=True)
